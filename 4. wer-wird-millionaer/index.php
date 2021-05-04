@@ -3,8 +3,32 @@
     $rootpath = "http://localhost/php_kurs/werwirdmillionaer/";
 
     $question_array = array();
-    $question_array[] = new Question('Ein zylindrisches Gefäß in dem Speisen gekocht werden', ['Ein Topf', 'gu Lasch', 'Auf Lauf', 'Ra Gout'], 0);
-    $question_array[] = new Question('Was hat man redensartlich, wenn man häufig das Klo aufsuchen muss?', ['Teenagerherz', 'Grundschülerlunge', 'Konfirmandenblasee', 'Abiturientenniere'], 3);
+
+    //GET DATA FROM DATABASE
+    $conn = new mysqli("localhost", "root", "", "phpkurs");
+    if($conn->error){
+        echo "DB-Connection Failed: ".$conn->error;
+    }
+    $sql = "SELECT * FROM questions";
+    $qry = $conn->query($sql);
+    while($result = $qry->fetch_assoc()){
+        $tmp_answers = array();
+        $sql2 = "SELECT * FROM answers WHERE FK_question=".$result['PK_question'].";";
+        $qry2 = $conn->query($sql2);
+        $count = 0;
+        $correct;
+        while($result2 = $qry2->fetch_assoc()){
+            $tmp_answers[] = $result2["answertext"];
+            if($result2['isCorrect']){
+                $correct = $count;
+            }
+            $count++;
+        }
+        $question_array[] = new Question($result['questiontext'], $tmp_answers, $correct);
+    }
+
+    // $question_array[] = new Question('Ein zylindrisches Gefäß in dem Speisen gekocht werden', ['Ein Topf', 'gu Lasch', 'Auf Lauf', 'Ra Gout'], 0);
+    // $question_array[] = new Question('Was hat man redensartlich, wenn man häufig das Klo aufsuchen muss?', ['Teenagerherz', 'Grundschülerlunge', 'Konfirmandenblasee', 'Abiturientenniere'], 3);
 
     if(isset($_POST['restart'])){
         header("Location: $rootpath");
@@ -22,7 +46,7 @@
         echo "<input type='hidden' name='questionIndex' value='$questionIndex'>";
         echo "<div class='answers-container-only'>";
         foreach($question_array[$questionIndex]->answers as $answer){
-            echo "<div class='answer-container'><input name='answer' type='radio' value='".array_search($answer, $question_array[$questionIndex]->answers)."'>";
+            echo "<div class='answer-container'><input name='answer' type='radio' required value='".array_search($answer, $question_array[$questionIndex]->answers)."'>";
             echo "<label>".(array_search($answer, $question_array[$questionIndex]->answers) + 1).". $answer</label></div>";
         }
         echo "</div><button type='submit' name='question-answer' class='question-submit-btn'>OK</button>";
@@ -102,7 +126,7 @@
         if(isset($_POST['quiz-start']) || isset($_POST['question-answer'])){
             ?>
                 <div class="menu">
-                    <form action="" method="post"><button type="submit" class="dark-btn" name="restart"><i class='fas fa-redo-alt'></i> RESTART</button></form>
+                    <form action="" method="post"><button type="submit" class="dark-btn" name="restart"><i class='fas fa-redo-alt'></i></button></form>
                 </div>
             <?php
         }
